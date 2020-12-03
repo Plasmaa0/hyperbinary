@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #define MAX 10000
-//asd
+//asdasddfhdf
 int factorial(int a)
 {
     if (a == 0 || a == 1)
