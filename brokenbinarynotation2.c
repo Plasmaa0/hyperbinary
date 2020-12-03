@@ -2,7 +2,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-
+//ghj
 int factorial(int a) //факториал числа a
 {
     if (a == 0 || a == 1)
