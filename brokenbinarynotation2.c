@@ -2,6 +2,14 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+
+#define MAXRECURSIONDEPTH 50 //максимальная глубина рекурсии
+#define MAXACTIVENUMBERS 40  //максимальное число одновременно обрабатываемых чисел
+#define MAXTIME 30           //максимальное время работы программы
+#define MAXMEMORY 10         //максимально задействуемая бамять в килобайтах
+
+time_t start; //глобальная переменная времени
 
 int factorial(int a) //факториал числа a
 {
@@ -161,26 +169,69 @@ void combinations(int possibleswapscount, int *output, int i) //записыва
     }
 }
 
-int brokenbinary(int *input, int length, FILE *fp) //ОСНОВНАЯ ФУНКЦИЯ. поиск альтернативных записей числа в двоичной системе с 2.
+int filesize(FILE *file) //возвращает размер файла
+{
+    fseek(file, 0, SEEK_END);
+    int size = (int)ftell(file);
+    fseek(file, 0, SEEK_SET);
+    return size;
+}
+
+void checkerrors(FILE *fp, int depth, int total) //обработка ошибок
+{
+    if (depth >= MAXRECURSIONDEPTH)
+    {
+        fprintf(stderr, "Recursion depth error");
+        fclose(fp);
+        remove("tmp.txt");
+        exit(0);
+    }
+    if (total >= MAXACTIVENUMBERS)
+    {
+        fprintf(stderr, "Too many numbers to do error");
+        fclose(fp);
+        remove("tmp.txt");
+        exit(0);
+    }
+    if (filesize(fp) >= (MAXMEMORY * 8192))
+    {
+        fprintf(stderr, "Memory overflow error");
+        fclose(fp);
+        remove("tmp.txt");
+        exit(0);
+    }
+    if ((int)round(difftime(time(NULL), start)) > MAXTIME)
+    {
+        fprintf(stderr, "Max time error");
+        fclose(fp);
+        remove("tmp.txt");
+        exit(0);
+    }
+}
+
+int brokenbinary(int *input, int length, FILE *fp, int depth, int total) //ОСНОВНАЯ ФУНКЦИЯ. поиск альтернативных записей числа в двоичной системе с 2.
 {
     int swapsn = swapsnumber(input, length); //получает число и смотрит, сколько в нем можно сделать замен по правилам
     if (swapsn <= 0)                         //если замен нет, выход
     {
+        //printf("depth - %d\n", depth);
         return 0;
     }
     int possibleswaps[swapsn];
     findswaps(input, length, possibleswaps); //находит индексы цифер, которые можно изменить по правилу
-    int all = C(swapsn, 1);
+    int all = swapsn;                        //C(swapsn, 1);
+    checkerrors(fp, depth, total);
     int results[all][length];
     int mask[all][swapsn];
     for (int i = 0; i < swapsn; i++)
     {
         combinations(swapsn, mask[i], i); //записывает в mask все возможные сочетания применения замен
     }
+    total += all;
     for (int i = 0; i < all; i++)
     {
         makenumber(input, length, possibleswaps, mask[i], swapsn, results[i]); //применяет все замены в соответствии с маской
-        brokenbinary(results[i], length, fp);                                  //результат отдается этой же функции в рекурсию
+        brokenbinary(results[i], length, fp, depth + 1, total);                //результат отдается этой же функции в рекурсию
     }
     for (int i = 0; i < all; i++) //печать результата
     {
@@ -192,14 +243,6 @@ int brokenbinary(int *input, int length, FILE *fp) //ОСНОВНАЯ ФУНКЦ
         }
     }
     return 0;
-}
-
-int filesize(FILE *file) //возвращает размер файла
-{
-    fseek(file, 0, SEEK_END);
-    int size = (int)ftell(file);
-    fseek(file, 0, SEEK_SET);
-    return size;
 }
 
 void deletecopiesandprint(FILE *file, int x, int binarylength) //вывод без дублирования результатов
@@ -260,6 +303,7 @@ void deletecopiesandprint(FILE *file, int x, int binarylength) //вывод бе
 
 void handle(int x) //подготовка, обработка входных данных для их отправки в функции brokenbinary и deletecopiesandprint, вывод.
 {
+    start = time(NULL);
     int a = blen(x); //длина числа в двоичной системе
     int b[a];
     int length = binary(x, b); //перевод в двоичную систему
@@ -268,14 +312,15 @@ void handle(int x) //подготовка, обработка входных д�
     fprintf(fp, " ");
     for (int i = 0; i < length; i++)
         fprintf(fp, "%d", b[i]);
-    brokenbinary(b, length, fp); //поиск и вывод возможных альтернативных записей данного числа в двоичной системе с 2
+    brokenbinary(b, length, fp, 0, 0); //поиск и вывод возможных альтернативных записей данного числа в двоичной системе с 2
     fprintf(fp, " ");
     fclose(fp);
     fp = fopen("tmp.txt", "r");
     deletecopiesandprint(fp, x, a); //вывод результата работы без повторов
     fclose(fp);                     //закрытие временного файла
     remove("tmp.txt");              //удаление временного файла
-    printf("Press Enter to exit.");
+    time_t now = time(NULL);
+    printf("Time: ~%d seconds.\nPress Enter to exit.", (int)round(difftime(now, start)));
     getchar();
 }
 
