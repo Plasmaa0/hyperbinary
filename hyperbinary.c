@@ -24,7 +24,7 @@ int blen(int x) //находит длину числа X в двоичной с�
     return i;
 }
 
-int floor2pow(int x) //возвращается наибольшую степень двойки ex, при которой 2^ex < X используя frexp()
+int floor2pow(double x) //возвращается наибольшую степень двойки ex, при которой 2^ex < X используя frexp()
 {
     double result;
     int ex;
@@ -33,11 +33,11 @@ int floor2pow(int x) //возвращается наибольшую степе�
     return ex;
 }
 
-int binary(int x) //записывает в массив цифры двоичного представления числа Х
+double binary(int x) //записывает в массив цифры двоичного представления числа Х
 {
     char digits[blen(x)];
     int len = 0;
-    int result;
+    double result;
     for (int i = floor2pow(x); x != 0; i--)
     {
         digits[i] = x % 2 + '0';
@@ -45,11 +45,11 @@ int binary(int x) //записывает в массив цифры двоичн
         x /= 2;
         len++;
     }
-    result = atoi(digits);
+    result = round((double)atoi(digits));
     return result;
 }
 
-void sort(int *input, int length)
+void sort(double *input, int length)
 {
     int noSwap; //сортировка при пузырьком помощи strcmp всех полученных подстрок-результатов
     int N = length;
@@ -60,7 +60,7 @@ void sort(int *input, int length)
         {
             if (input[j] > input[j + 1])
             {
-                int tmp;
+                double tmp;
                 tmp = input[j];
                 input[j] = input[j + 1];
                 input[j + 1] = tmp;
@@ -72,7 +72,7 @@ void sort(int *input, int length)
     }
 }
 
-void markcopies(int *input, int length)
+void markcopies(double *input, int length)
 {
     for (int i = 0; i < length; i++)
     {
@@ -89,20 +89,19 @@ int main()
     printf("Input number: ");
     scanf("%d", &x);
     getchar();
-    int a[x];
-    int length = (int)(2 + x / 2);
-    for (int i = 0; i < length; i++)
+    double a[x];
+    for (int i = 0; i < x; i++)
     {
         a[i] = (binary(i) + binary(x - i));
     }
-    sort(a, length);
-    markcopies(a, length);
+    sort(a, x);
+    markcopies(a, x);
     printf("Result:\n");
-    for (int i = 0; i < length; i++)
+    for (int i = 0; i < x; i++)
     {
         if (a[i] != -1) //вывод без повторов
         {
-            printf("%d\n", a[i]);
+            printf("%.0lf\n", a[i]);
         }
     }
     printf("Press Enter to exit.");
