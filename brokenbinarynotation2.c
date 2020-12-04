@@ -319,8 +319,7 @@ void handle(int x) //подготовка, обработка входных д�
     deletecopiesandprint(fp, x, a); //вывод результата работы без повторов
     fclose(fp);                     //закрытие временного файла
     remove("tmp.txt");              //удаление временного файла
-    time_t now = time(NULL);
-    printf("Time: ~%d seconds.\nPress Enter to exit.", (int)round(difftime(now, start)));
+    printf("Time: ~%d seconds.\nPress Enter to exit.", (int)round(difftime(time(NULL), start)));
     getchar();
 }
 
