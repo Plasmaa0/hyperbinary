@@ -4,12 +4,41 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define MAXRECURSIONDEPTH 50 //максимальная глубина рекурсии
-#define MAXACTIVENUMBERS 40  //максимальное число одновременно обрабатываемых чисел
-#define MAXTIME 30           //максимальное время работы программы
-#define MAXMEMORY 10         //максимально задействуемая бамять в килобайтах
-
+int MAXRECURSIONDEPTH = 15; //максимальная глубина рекурсии
+int MAXACTIVENUMBERS = 40;  //максимальное число одновременно обрабатываемых чисел
+int MAXTIME = 10;           //максимальное время работы программы
+int MAXMEMORY = 10;         //максимально задействуемая бамять в килобайтах
+int x;
 time_t start; //глобальная переменная времени
+
+int factorization(int x, int *divisors, int length, int mode) //mode == 0 : разбивает число на простые множители, их записывает массив
+{                                                             //mode == 1 : возвращает 1 или 0 в зависимости от простоты числа
+    int divisorindex = 0;
+    int i = 2;
+    int isprime = 1;
+    while (i <= sqrt(x) && divisorindex < length)
+    {
+        if (x % i == 0)
+        {
+            if (mode == 0)
+            {
+                divisors[divisorindex] = i;
+                divisorindex++;
+            }
+            else if (mode == 1)
+            {
+                isprime = 0;
+            }
+            x = x / i;
+        }
+        else
+        {
+            i = i + 1;
+        }
+    }
+    divisors[divisorindex] = x;
+    return (mode == 1) ? isprime : divisorindex + 1;
+}
 
 int factorial(int a) //факториал числа a
 {
@@ -52,13 +81,10 @@ void makenumber(int *input, int length, int *swaps, int *mask, int swapsn, int *
     }
 }
 
-int floor2pow(int x) //возвращается наибольшую степень двойки ex, при которой 2^ex < X используя frexp()
+int floor2pow(int x) //возвращается степень двойки - result, при которой 2^result < x < 2^(result+1)
 {
-    double result;
-    int ex;
-    result = frexp(x, &ex);
-    ex += ((int)result == 1) ? (-2) : (-1);
-    return ex;
+    int result = log2(x);
+    return result;
 }
 
 int binary(int x, int *bin) //записывает в массив цифры двоичного представления числа Х
@@ -177,32 +203,36 @@ int filesize(FILE *file) //возвращает размер файла
     return size;
 }
 
-void checkerrors(FILE *fp, int depth, int total) //обработка ошибок
+void checkerrors(FILE *fp, int depth, int total, int iteration) //обработка ошибок
 {
+    int error = 0;
     if (depth >= MAXRECURSIONDEPTH)
-    {
-        fprintf(stderr, "Recursion depth error");
-        fclose(fp);
-        remove("tmp.txt");
-        exit(0);
-    }
+        error = 1;
     if (total >= MAXACTIVENUMBERS)
-    {
-        fprintf(stderr, "Too many numbers to do error");
-        fclose(fp);
-        remove("tmp.txt");
-        exit(0);
-    }
+        error = 2;
     if (filesize(fp) >= (MAXMEMORY * 8192))
-    {
-        fprintf(stderr, "Memory overflow error");
-        fclose(fp);
-        remove("tmp.txt");
-        exit(0);
-    }
+        error = 3;
     if ((int)round(difftime(time(NULL), start)) > MAXTIME)
+        error = 4;
+    switch (error)
     {
-        fprintf(stderr, "Max time error");
+    case 0:
+        break;
+    case 1:
+        fprintf(stderr, "Recursion depth error on %d iteration.", iteration);
+        break;
+    case 2:
+        fprintf(stderr, "Too many numbers to do error on %d iteration.", iteration);
+        break;
+    case 3:
+        fprintf(stderr, "Memory overflow error on %d iteration.", iteration);
+        break;
+    case 4:
+        fprintf(stderr, "Max time error on %d iteration.", iteration);
+        break;
+    }
+    if (error != 0)
+    {
         fclose(fp);
         remove("tmp.txt");
         exit(0);
@@ -220,7 +250,7 @@ int brokenbinary(int *input, int length, FILE *fp, int depth, int total) //ОС�
     int possibleswaps[swapsn];
     findswaps(input, length, possibleswaps); //находит индексы цифер, которые можно изменить по правилу
     int all = swapsn;                        //C(swapsn, 1);
-    checkerrors(fp, depth, total);
+    checkerrors(fp, depth, total, depth);
     int results[all][length];
     int mask[all][swapsn];
     for (int i = 0; i < swapsn; i++)
@@ -301,6 +331,75 @@ void deletecopiesandprint(FILE *file, int x, int binarylength) //вывод бе
     }
 }
 
+double analyzedivizors(int x)
+{
+    int length = floor2pow(x) + 1;
+    int divisors[length];
+    int numberofdivisors = factorization(x, divisors, length, 0);
+    float difficulty = 0;
+    int total2 = 0;
+    for (int i = 0; i < numberofdivisors; i++)
+    {
+        if (divisors[i] == 2)
+        {
+            total2++;
+        }
+    }
+    difficulty = (1.0 - ((double)total2 / (double)numberofdivisors) + ((double)total2 / 31.0));
+    return difficulty;
+}
+
+double analyzebinary(int x)
+{
+    int a = blen(x);
+    int b[a];
+    int length = binary(x, b);
+    int swapsn = swapsnumber(b, length);
+    double difficulty = (double)swapsn / ((double)length / 2.0);
+    return difficulty;
+}
+
+double analyzepow2(int x)
+{
+    int under = floor2pow(x);
+    int upper = under + 1;
+    int a = pow(2, under);
+    int b = pow(2, upper);
+    int left = x - a;
+    int right = b - x;
+    if (left == 0 || right == 0)
+    {
+        return 0.00001;
+    }
+    double k = (double)left / (double)right;
+    if (k > 1.0)
+    {
+        k = 1.0 / k;
+    }
+    double difficulty = 1 - k;
+    return difficulty;
+}
+
+void settings(int x)
+{
+    double divizorsdifficulty = analyzedivizors(x);
+    double binarydifficulty = analyzebinary(x);
+    double pow2difficulty = analyzepow2(x);
+    double difficulty = (divizorsdifficulty + binarydifficulty + pow2difficulty) / 3.0;
+    MAXRECURSIONDEPTH = (int)ceil(MAXRECURSIONDEPTH / ((0.001) + (difficulty / 2)));
+    MAXACTIVENUMBERS = (int)ceil(MAXACTIVENUMBERS / (difficulty + 0.001));
+    MAXTIME = (int)ceil(MAXTIME * (2.0 / difficulty));
+    MAXMEMORY = (int)ceil(MAXMEMORY * (5.0 / difficulty));
+    if (MAXTIME > 120)
+    {
+        MAXTIME = 120;
+    }
+    if (MAXMEMORY > 1000)
+    {
+        MAXMEMORY = 1000;
+    }
+}
+
 void handle(int x) //подготовка, обработка входных данных для их отправки в функции brokenbinary и deletecopiesandprint, вывод.
 {
     start = time(NULL);
@@ -325,15 +424,24 @@ void handle(int x) //подготовка, обработка входных д�
 
 int main()
 {
-    int x;
     printf("Input number: ");
     scanf("%d", &x); //ввод числа
     getchar();
-    handle((int)x);
+    settings(x);
+    handle(x);
 }
 
 //функции не используются, остались от прошлых версий
 /*
+int floor2pow(int x) //СТАРАЯ ВЕРСИЯ  //возвращается наибольшую степень двойки ex, при которой 2^ex < X используя frexp()
+{
+    double result;
+    int ex;
+    result = frexp(x, &ex);
+    ex += ((int)result == 1) ? (-2) : (-1);
+    return ex;
+}
+
 int C_all(int n) //количество всех возможных сочетаний из n (без установки определенного количества чисел в сочетаннии)
 {
     int sum = 0;
