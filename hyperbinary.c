@@ -83,12 +83,8 @@ void markcopies(double *input, int length)
     }
 }
 
-int main()
+int prikol(int x)
 {
-    int x;
-    printf("Input number: ");
-    scanf("%d", &x);
-    getchar();
     double a[x];
     for (int i = 0; i < x; i++)
     {
@@ -106,5 +102,12 @@ int main()
     }
     printf("Press Enter to exit.");
     getchar();
+    return 0;
+}
+
+int main(int argc, char const *argv[])
+{
+    int x = atoi(argv[1]);
+    prikol(x);
     return 0;
 }
