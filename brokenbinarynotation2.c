@@ -53,6 +53,30 @@ int C(int n, int k) //число сочетаний из n по k
     return factorial(n) / factorial(n - k) / factorial(k);
 }
 
+int floor2pow(int x) //возвращается степень двойки - result, при которой 2^result < x < 2^(result+1)
+{
+    int result = log2(x);
+    return result;
+}
+
+int blen(int x) //находит длину числа X в двоичной системе, сдвигая его побитово вправо пока числе не станет равно 0
+{               //количество сделанных сдвигов и будет длиной числа в двоичной системе
+    int i = 0;
+    while (1)
+    {
+        if (x == 0b0)
+        {
+            break;
+        }
+        else
+        {
+            x = (x >> 1);
+            i++;
+        }
+    }
+    return i;
+}
+
 void makenumber(int *input, int length, int *swaps, int *mask, int swapsn, int *output) //по правилам проводит замену цифер в input на позициях swaps с маской mask
 {                                                                                       //1 Правило: 10 -> 02
     for (int i = 0; i < length; i++)                                                    //2 Правило: 20 -> 12
@@ -81,12 +105,6 @@ void makenumber(int *input, int length, int *swaps, int *mask, int swapsn, int *
     }
 }
 
-int floor2pow(int x) //возвращается степень двойки - result, при которой 2^result < x < 2^(result+1)
-{
-    int result = log2(x);
-    return result;
-}
-
 int binary(int x, int *bin) //записывает в массив цифры двоичного представления числа Х
 {
     int len = 0;
@@ -99,24 +117,6 @@ int binary(int x, int *bin) //записывает в массив цифры д
         len++;
     }
     return len;
-}
-
-int blen(int x) //находит длину числа X в двоичной системе, сдвигая его побитово вправо пока числе не станет равно 0
-{               //количество сделанных сдвигов и будет длиной числа в двоичной системе
-    int i = 0;
-    while (1)
-    {
-        if (x == 0b0)
-        {
-            break;
-        }
-        else
-        {
-            x = (x >> 1);
-            i++;
-        }
-    }
-    return i;
 }
 
 int canswap(int *input, int length, int position) //Проверяет, возможна ли замена цифер с индексами position и position+1
