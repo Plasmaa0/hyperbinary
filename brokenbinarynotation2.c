@@ -59,6 +59,12 @@ int floor2pow(int x) //возвращается степень двойки - re
     return result;
 }
 
+int floor3pow(int x) //возвращается степень двойки - result, при которой 2^result < x < 2^(result+1)
+{
+    int result = log(x) / log(3);
+    return result;
+}
+
 int blen(int x) //находит длину числа X в двоичной системе, сдвигая его побитово вправо пока числе не станет равно 0
 {               //количество сделанных сдвигов и будет длиной числа в двоичной системе
     int i = 0;
@@ -105,6 +111,20 @@ void makenumber(int *input, int length, int *swaps, int *mask, int swapsn, int *
     }
 }
 
+int ternary(int x, int *bin) //записывает в массив цифры двоичного представления числа Х
+{
+    int len = 0;
+    int f2p = floor3pow(x);
+    for (int i = f2p; x != 0; i--)
+    {
+        bin[i] = x % 3;
+        x -= x % 3;
+        x /= 3;
+        len++;
+    }
+    return len;
+}
+
 int binary(int x, int *bin) //записывает в массив цифры двоичного представления числа Х
 {
     int len = 0;
@@ -117,6 +137,43 @@ int binary(int x, int *bin) //записывает в массив цифры д
         len++;
     }
     return len;
+}
+
+int binary2decimal(int *bin, int length)
+{
+    int result = 0;
+    for (int i = length - 1; i >= 0; i--)
+    {
+        result += bin[i] * pow(2, length - 1 - i);
+    }
+    return result;
+}
+
+int lastchance(int x)
+{
+    int bin[32];
+    int len = binary(x, bin);
+    // for (int i = 0; i < len; i++)
+    // {
+    //     printf("%d", bin[i]);
+    // }
+    int result = 0;
+    for (int i = 0; i <= x * 3; i++)
+    {
+        int ternar[21];
+        int length = ternary(i, ternar);
+        int y = binary2decimal(ternar, length);
+        if (y == x)
+        {
+            result = 1;
+            for (int j = 0; j < length; j++)
+            {
+                printf("%d", ternar[j]);
+            }
+            printf("\n");
+        }
+    }
+    return result;
 }
 
 int canswap(int *input, int length, int position) //Проверяет, возможна ли замена цифер с индексами position и position+1
@@ -222,19 +279,26 @@ void checkerrors(FILE *fp, int depth, int total, int iteration) //обработ
         fprintf(stderr, "Recursion depth error on %d iteration.", iteration);
         break;
     case 2:
-        fprintf(stderr, "Too many numbers to do error on %d iteration.", iteration);
+        fprintf(stderr, "Too many numbers to do error on %d iteration.\n", iteration);
         break;
     case 3:
-        fprintf(stderr, "Memory overflow error on %d iteration.", iteration);
+        fprintf(stderr, "Memory overflow error on %d iteration.\n", iteration);
         break;
     case 4:
-        fprintf(stderr, "Max time error on %d iteration.", iteration);
+        fprintf(stderr, "Max time error on %d iteration.\n", iteration);
         break;
     }
     if (error != 0)
     {
         fclose(fp);
         remove("tmp.txt");
+        printf("Trying second algorithm\n");
+        int success = lastchance(x);
+        if (success == 0)
+        {
+            printf("Failed.\nExiting.\nPress Enter to close the window");
+        }
+        getchar();
         exit(0);
     }
 }
